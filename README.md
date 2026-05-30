@@ -4,6 +4,17 @@
 
 It is intended for cases where old project entries, archived threads, deleted workspace paths, or mobile-visible sidebar clutter remain after projects were removed or reorganized.
 
+## Translations
+
+- [한국어](docs/README.ko.md)
+- [日本語](docs/README.ja.md)
+- [简体中文](docs/README.zh-CN.md)
+- [繁體中文](docs/README.zh-TW.md)
+- [Русский](docs/README.ru.md)
+- [Español](docs/README.es.md)
+- [Français](docs/README.fr.md)
+- [Deutsch](docs/README.de.md)
+
 ## What It Does
 
 - Reads saved project roots from `.codex-global-state.json`.
