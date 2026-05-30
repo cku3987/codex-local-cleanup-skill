@@ -17,7 +17,13 @@
 
 ## インストール
 
-スキルフォルダーを Codex のスキルディレクトリにコピーします。
+推奨: Codex の組み込み `skill-installer` スキルで、この GitHub パスからインストールします。
+
+```text
+$skill-installer Install the skill from https://github.com/cku3987/codex-local-cleanup-skill/tree/main/codex-local-cleanup
+```
+
+手動インストール: スキルフォルダーを Codex のスキルディレクトリにコピーします。
 
 ```powershell
 Copy-Item -Recurse .\codex-local-cleanup "$env:USERPROFILE\.codex\skills\codex-local-cleanup"

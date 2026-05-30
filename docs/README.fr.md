@@ -17,7 +17,13 @@ Elle est utile lorsque d'anciens projets, des threads archivés, des chemins de 
 
 ## Installation
 
-Copiez le dossier de la skill dans le répertoire des skills Codex :
+Recommandé : demandez à Codex d'installer ce chemin GitHub avec la skill intégrée `skill-installer` :
+
+```text
+$skill-installer Install the skill from https://github.com/cku3987/codex-local-cleanup-skill/tree/main/codex-local-cleanup
+```
+
+Installation manuelle : copiez le dossier de la skill dans le répertoire des skills Codex :
 
 ```powershell
 Copy-Item -Recurse .\codex-local-cleanup "$env:USERPROFILE\.codex\skills\codex-local-cleanup"

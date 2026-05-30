@@ -17,7 +17,13 @@ Verwende ihn, wenn nach dem Löschen oder Umorganisieren von Projekten weiterhin
 
 ## Installation
 
-Kopiere den Skill-Ordner in dein Codex-Skill-Verzeichnis:
+Empfohlen: Bitte Codex, diesen GitHub-Pfad mit dem integrierten `skill-installer`-Skill zu installieren:
+
+```text
+$skill-installer Install the skill from https://github.com/cku3987/codex-local-cleanup-skill/tree/main/codex-local-cleanup
+```
+
+Manuelle Installation: Kopiere den Skill-Ordner in dein Codex-Skill-Verzeichnis:
 
 ```powershell
 Copy-Item -Recurse .\codex-local-cleanup "$env:USERPROFILE\.codex\skills\codex-local-cleanup"

@@ -17,7 +17,13 @@
 
 ## 安装
 
-将技能文件夹复制到 Codex 技能目录。
+推荐方式：使用 Codex 内置的 `skill-installer` 技能从这个 GitHub 路径安装。
+
+```text
+$skill-installer Install the skill from https://github.com/cku3987/codex-local-cleanup-skill/tree/main/codex-local-cleanup
+```
+
+手动安装：将技能文件夹复制到 Codex 技能目录。
 
 ```powershell
 Copy-Item -Recurse .\codex-local-cleanup "$env:USERPROFILE\.codex\skills\codex-local-cleanup"

@@ -32,7 +32,13 @@ The goal is for the mobile-visible project list to match the active saved projec
 
 ## Installation
 
-Copy the skill folder into your Codex skills directory:
+Recommended: ask Codex to install this repository path with the built-in `skill-installer` skill:
+
+```text
+$skill-installer Install the skill from https://github.com/cku3987/codex-local-cleanup-skill/tree/main/codex-local-cleanup
+```
+
+Manual install: copy the skill folder into your Codex skills directory:
 
 ```powershell
 Copy-Item -Recurse .\codex-local-cleanup "$env:USERPROFILE\.codex\skills\codex-local-cleanup"

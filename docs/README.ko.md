@@ -21,7 +21,13 @@
 
 ## 설치
 
-스킬 폴더를 Codex 스킬 디렉터리로 복사합니다.
+권장 방식: Codex의 기본 `skill-installer` 스킬로 이 GitHub 경로를 설치합니다.
+
+```text
+$skill-installer Install the skill from https://github.com/cku3987/codex-local-cleanup-skill/tree/main/codex-local-cleanup
+```
+
+수동 설치: 스킬 폴더를 Codex 스킬 디렉터리로 복사합니다.
 
 ```powershell
 Copy-Item -Recurse .\codex-local-cleanup "$env:USERPROFILE\.codex\skills\codex-local-cleanup"

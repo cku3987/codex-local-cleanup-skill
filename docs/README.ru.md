@@ -17,7 +17,13 @@
 
 ## Установка
 
-Скопируйте папку навыка в директорию навыков Codex.
+Рекомендуемый способ: попросите Codex установить этот путь GitHub с помощью встроенного навыка `skill-installer`.
+
+```text
+$skill-installer Install the skill from https://github.com/cku3987/codex-local-cleanup-skill/tree/main/codex-local-cleanup
+```
+
+Ручная установка: скопируйте папку навыка в директорию навыков Codex.
 
 ```powershell
 Copy-Item -Recurse .\codex-local-cleanup "$env:USERPROFILE\.codex\skills\codex-local-cleanup"
