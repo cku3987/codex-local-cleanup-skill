@@ -49,6 +49,14 @@ $codex-local-cleanup Clean saved-project-outside project traces, but do not dele
 
 Cette skill agit sur l'état local de Codex Desktop. Elle doit toujours effectuer une sauvegarde avant de modifier les métadonnées.
 
+Notes importantes sur les risques et les permissions :
+
+- Il s'agit d'un nettoyage d'état local de l'application, pas d'un nettoyage du code source.
+- Elle peut supprimer les métadonnées de threads Codex, les fichiers session JSONL, les index de barre latérale, les entrées de confiance et les lignes SQLite des cibles sélectionnées.
+- Dans les environnements avec accès complet ou sans approbation, Codex peut écrire immédiatement. En cas de doute, demandez d'abord un inventaire en lecture seule.
+- N'exécutez pas un nettoyage large à partir d'un prompt vague. Vérifiez la liste des cibles, le chemin de sauvegarde et les règles de conservation avant d'autoriser l'écriture.
+- Les sauvegardes peuvent contenir des chemins locaux, des titres de threads, des prompts et du contenu de conversations. Gardez les sauvegardes privées.
+
 Elle ne doit pas supprimer ni réécrire :
 
 - `auth.json`

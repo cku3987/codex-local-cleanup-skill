@@ -49,6 +49,14 @@ $codex-local-cleanup Clean saved-project-outside project traces, but do not dele
 
 Dieser Skill arbeitet mit dem lokalen Zustand von Codex Desktop. Vor Änderungen an Metadaten sollte immer eine Sicherung erstellt werden.
 
+Wichtige Risiko- und Berechtigungshinweise:
+
+- Dies ist eine Bereinigung des lokalen Anwendungsstatus, keine Bereinigung von Quellcode.
+- Der Skill kann Codex-Thread-Metadaten, Session-JSONL-Dateien, Sidebar-Indizes, Trust-Einträge und SQLite-Zeilen für ausgewählte Ziele löschen.
+- In Umgebungen mit Vollzugriff oder ohne Bestätigungen kann Codex sofort schreiben. Wenn du unsicher bist, fordere zuerst ein schreibgeschütztes Inventar an.
+- Starte keine breite Bereinigung mit einem unklaren Prompt. Prüfe vor Schreibzugriffen die Zielliste, den Backup-Pfad und die Erhaltungsregeln.
+- Backups können lokale Pfade, Thread-Titel, Prompts und Gesprächsinhalte enthalten. Behandle Backups vertraulich.
+
 Folgende Elemente sollten nicht gelöscht oder überschrieben werden:
 
 - `auth.json`

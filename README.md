@@ -64,6 +64,14 @@ $codex-local-cleanup Clean saved-project-outside project traces, but do not dele
 
 This skill works with local Codex Desktop state. It should always back up before modifying metadata.
 
+Important risk and permission notes:
+
+- This is local application-state cleanup, not source-code cleanup.
+- It can delete Codex thread metadata, session JSONL files, sidebar indexes, trust entries, and SQLite rows for selected targets.
+- In full-access or no-approval environments, Codex may be able to write immediately. Ask for a read-only inventory first if you are unsure.
+- Do not run broad cleanup from a vague prompt. Review the target list, backup path, and preservation rules before allowing writes.
+- Backups may contain local paths, thread titles, prompts, and conversation content. Keep backups private.
+
 It should not delete or rewrite:
 
 - `auth.json`

@@ -1,7 +1,7 @@
 interface:
   display_name: "Codex Local Cleanup"
   short_description: "Clean stale local Codex metadata safely"
-  default_prompt: "Use $codex-local-cleanup to keep my saved projects and projectless chats, then back up and clean non-active project metadata from local Codex."
+  default_prompt: "Use $codex-local-cleanup to inventory candidates first, keep my saved projects and projectless chats, then back up and clean non-active project metadata from local Codex."
 
 policy:
   allow_implicit_invocation: true

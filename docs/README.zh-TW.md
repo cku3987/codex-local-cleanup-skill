@@ -49,6 +49,14 @@ $codex-local-cleanup Clean saved-project-outside project traces, but do not dele
 
 此技能會處理本機 Codex Desktop 狀態。修改 metadata 前必須先備份。
 
+重要風險與權限注意事項：
+
+- 這是本機應用程式狀態清理，不是原始碼清理。
+- 它可能會刪除所選目標的 Codex thread 中繼資料、session JSONL、側邊欄索引、信任設定和 SQLite row。
+- 在全權限或不需確認的環境中，Codex 可能可以立即寫入。如果不確定，請先要求唯讀清單。
+- 不要用範圍模糊的提示直接執行大範圍清理。寫入前應檢查目標清單、備份路徑和保留規則。
+- 備份可能包含本機路徑、thread 標題、prompt 和對話內容。請勿公開分享備份。
+
 不應刪除或重寫下列項目：
 
 - `auth.json`

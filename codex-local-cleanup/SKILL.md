@@ -10,9 +10,11 @@ Use this skill when the user wants to clean local Codex Desktop remnants in `~/.
 ## Safety Rules
 
 - Treat `~/.codex` as live application state. Do not modify it until the target set is explicit and backed up.
+- Treat full-access, no-approval, or danger-level tool permissions as implementation capability, not user consent. If the cleanup scope is ambiguous, stop after read-only inventory and ask for confirmation before writes.
 - Never delete or rewrite `auth.json`, `installation_id`, `skills/`, `plugins/`, `automations/`, `.sandbox-secrets/`, or user source projects.
 - Never clean the current active thread, even if its cwd is projectless or outside saved projects.
 - Do not remove general chat threads unless the user explicitly asks for them.
+- Tell the user that backups may contain local paths, thread titles, prompts, and conversation content; do not print sensitive backup contents.
 - Prefer narrow cleanup scopes:
   - non-projectless project threads outside saved project roots
   - stale archived threads outside saved project roots
