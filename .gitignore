@@ -1,0 +1,22 @@
+.DS_Store
+Thumbs.db
+
+# Local/editor files
+.idea/
+.vscode/
+*.swp
+*.tmp
+
+# Do not publish Codex state or cleanup backups
+.codex/
+work/
+outputs/
+*backup*/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.jsonl
+
+# Python cache if validation scripts are added locally
+__pycache__/
+*.pyc
