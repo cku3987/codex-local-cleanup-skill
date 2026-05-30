@@ -1,6 +1,6 @@
 # Codex Local Cleanup Skill
 
-`codex-local-cleanup` is a Codex skill for safely cleaning stale local Codex Desktop metadata under `~/.codex`.
+`codex-local-cleanup` is a Codex skill for safely cleaning stale Codex Desktop project and thread metadata, deleted project traces, archived threads, and old local state under `~/.codex`.
 
 It is intended for cases where old project entries, archived threads, deleted workspace paths, or mobile-visible sidebar clutter remain after projects were removed or reorganized.
 
