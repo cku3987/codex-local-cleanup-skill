@@ -4,6 +4,10 @@
 
 프로젝트를 삭제하거나 이름을 바꾼 뒤에도 Codex Desktop 또는 모바일 Codex에 예전 프로젝트, 아카이브 스레드, 삭제된 작업 경로가 계속 보일 때 사용합니다.
 
+목표는 모바일에 보이는 프로젝트 목록도 Codex Desktop의 활성 saved project 목록과 같아지게 하는 것입니다.
+
+![Codex Local Cleanup 흐름](../assets/codex-local-cleanup-flow.svg)
+
 ## 주요 기능
 
 - `.codex-global-state.json`에서 현재 저장된 프로젝트 루트를 읽습니다.

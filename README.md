@@ -4,6 +4,10 @@
 
 It is intended for cases where old project entries, archived threads, deleted workspace paths, or mobile-visible sidebar clutter remain after projects were removed or reorganized.
 
+The goal is for the mobile-visible project list to match the active saved projects shown in Codex Desktop.
+
+![Codex Local Cleanup flow](assets/codex-local-cleanup-flow.svg)
+
 ## Translations
 
 - [한국어](docs/README.ko.md)
