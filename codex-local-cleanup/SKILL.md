@@ -68,6 +68,7 @@ For Windows paths, normalize `\\?\` prefixes, slash direction, trailing slashes,
    - consistent SQLite backups using `sqlite3.Connection.backup`
    - raw copies of `.codex-global-state.json`, `.bak`, `session_index.jsonl`, and `config.toml`
    - target rollout JSONL files
+   - pre-cleanup size manifest for target rollout files, metadata files, and modified SQLite DB files
 5. Remove only validated target rollout files.
 6. Remove matching `session_index.jsonl` lines.
 7. Remove matching prompt-history, thread-permission, unread-thread, thread-client-id, projectless, workspace-hint, and follow-up keys from `.codex-global-state.json` and `.bak`.
@@ -79,7 +80,8 @@ For Windows paths, normalize `\\?\` prefixes, slash direction, trailing slashes,
 9. Delete matching `logs_*.sqlite` rows by `thread_id`. Avoid broad text deletes that would erase the current cleanup thread's diagnostic logs unless the user explicitly asks.
 10. For `config.toml`, remove only the selected `[projects.'...']` blocks and their body lines.
 11. Run SQLite checkpoint/VACUUM after writes when practical.
-12. Verify before reporting success.
+12. Record post-cleanup sizes for modified files and DBs.
+13. Verify before reporting success.
 
 ## Verification
 
@@ -96,6 +98,16 @@ Run checks that directly prove the result:
 - Dead `config.toml` project blocks are zero when cleaning missing trust entries.
 - `codex_app.list_threads` searches for removed titles or paths return no removed target threads when the app tool is available.
 
+## Size Accounting
+
+Report cleanup size conservatively:
+
+- Directly reclaimed bytes: sum of deleted rollout JSONL files and other deleted files that no longer exist after cleanup.
+- SQLite reclaimed bytes: report DB file size delta before/after only when measured. If rows were deleted but the DB file did not shrink because pages/WAL are reused, report the deleted row counts separately instead of claiming reclaimed bytes.
+- Backup size: total bytes written under the backup directory.
+- Net disk change: direct reclaimed bytes minus backup size, when both are known. Make clear that backups intentionally increase disk usage until the user deletes them.
+- Human-readable units: include bytes and KiB/MiB for non-trivial values.
+
 ## Reporting
 
 Report in Korean unless the user asks otherwise. Include:
@@ -104,6 +116,7 @@ Report in Korean unless the user asks otherwise. Include:
 - number of threads removed
 - files/DBs touched
 - backup directory
+- directly reclaimed size, backup size, and DB row/file-size notes
 - verification results
 - any known residual traces, especially current-thread diagnostic logs that were intentionally preserved
 
