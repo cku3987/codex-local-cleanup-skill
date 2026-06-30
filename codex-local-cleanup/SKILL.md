@@ -25,7 +25,7 @@ Use this skill when the user wants to clean local Codex Desktop remnants in `~/.
 
 Use local Codex files only:
 
-- `.codex-global-state.json`: saved project roots, project order, pinned projects, prompt history, thread permissions, `projectless-thread-ids`, `thread-projectless-output-directories`, `thread-workspace-root-hints`, and `queued-follow-ups`.
+- `.codex-global-state.json`: saved project roots, project order, pinned projects, prompt history, thread permissions, `projectless-thread-ids`, `thread-projectless-output-directories`, `thread-workspace-root-hints`, `queued-follow-ups`, and nested `electron-persisted-atom-state` UI caches.
 - `state_*.sqlite`: thread metadata, cwd, archived flag, rollout path, `source`, `thread_source`, and agent/subagent fields.
 - `logs_*.sqlite`: diagnostic logs.
 - `session_index.jsonl`: thread index.
@@ -70,7 +70,7 @@ For Windows paths, normalize `\\?\` prefixes, slash direction, trailing slashes,
    - target rollout JSONL files
 5. Remove only validated target rollout files.
 6. Remove matching `session_index.jsonl` lines.
-7. Remove matching prompt-history and thread-permission keys from `.codex-global-state.json` and `.bak`.
+7. Remove matching prompt-history, thread-permission, unread-thread, thread-client-id, projectless, workspace-hint, and follow-up keys from `.codex-global-state.json` and `.bak`.
 8. Delete target rows from `state_*.sqlite` tables in dependency order:
    - `thread_dynamic_tools`
    - `thread_spawn_edges`
@@ -89,7 +89,7 @@ Run checks that directly prove the result:
 - Target thread IDs no longer exist in `state_*.sqlite`.
 - Target rollout files no longer exist.
 - Target IDs no longer appear in `session_index.jsonl`.
-- Target IDs no longer appear in `.codex-global-state.json` or `.bak`, except when the current conversation naturally mentions them and that scope was intentionally preserved.
+- Target IDs no longer appear in `.codex-global-state.json` or `.bak`, except when the current conversation naturally mentions them and that scope was intentionally preserved. Check nested `electron-persisted-atom-state` keys such as heartbeat permissions, unread thread IDs, and thread client IDs.
 - Archived-outside-active count is zero when cleaning outside-project archives.
 - Outside-active non-projectless thread count is zero when cleaning mobile-visible non-active projects.
 - `config.toml` outside-active non-projectless trust block count is zero when cleaning non-active projects.
