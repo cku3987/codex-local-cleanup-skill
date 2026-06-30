@@ -25,13 +25,15 @@ Use this skill when the user wants to clean local Codex Desktop remnants in `~/.
 
 Use local Codex files only:
 
-- `.codex-global-state.json`: saved project roots, project order, pinned projects, prompt history, thread permissions.
-- `state_*.sqlite`: thread metadata, cwd, archived flag, rollout path.
+- `.codex-global-state.json`: saved project roots, project order, pinned projects, prompt history, thread permissions, `projectless-thread-ids`, `thread-projectless-output-directories`, `thread-workspace-root-hints`, and `queued-follow-ups`.
+- `state_*.sqlite`: thread metadata, cwd, archived flag, rollout path, `source`, `thread_source`, and agent/subagent fields.
 - `logs_*.sqlite`: diagnostic logs.
 - `session_index.jsonl`: thread index.
 - `sessions/**/rollout-*.jsonl`: active/non-archived conversation files.
 - `archived_sessions/rollout-*.jsonl`: archived conversation files.
 - `config.toml`: trusted project roots.
+
+If both top-level `.codex/state_*.sqlite` and legacy `.codex/sqlite/state_*.sqlite` exist, compare migration count and modified time first. Prefer the current active DB and treat the older location as legacy unless the user explicitly asks to clean legacy state too.
 
 ## Classification
 
@@ -42,13 +44,15 @@ Maintain by default:
 - Threads whose `cwd` equals or is under a saved project root.
 - The current thread.
 - Projectless/general chat threads unless the user explicitly asks to remove them.
+- Threads listed in `projectless-thread-ids`, `thread-projectless-output-directories`, or `thread-workspace-root-hints` unless the user explicitly asks to remove projectless/general chat state.
+- Subagent threads whose `thread_source` is `subagent`, unless their parent thread is also being removed and the user explicitly included spawned agent state.
 - Archived threads under saved project roots unless the user asks to prune those archives too.
 
 Cleanup candidates:
 
-- Non-projectless threads whose `cwd` is outside saved project roots, when the user asks to keep only current saved/active projects.
+- Non-projectless, non-subagent threads whose `cwd` is outside saved project roots, when the user asks to keep only current saved/active projects.
 - Threads with `cwd` paths that do not exist.
-- Archived threads whose `cwd` is outside saved project roots.
+- Archived threads whose `cwd` is outside saved project roots, excluding projectless/general chat markers unless the user asked to prune those too.
 - `config.toml` `[projects.'...']` blocks for paths that do not exist.
 - `config.toml` `[projects.'...']` blocks outside saved project roots, when cleaning non-active projects. Preserve current projectless workspace trust entries unless explicitly asked to remove general chat state.
 
@@ -58,7 +62,7 @@ For Windows paths, normalize `\\?\` prefixes, slash direction, trailing slashes,
 
 1. Read `.codex-global-state.json` and `state_*.sqlite` in read-only mode.
 2. Print a concise candidate summary: count, cwd, archived count, whether each path exists, and whether it is under a saved project root.
-3. Confirm the cleanup scope from the user's instruction. If the user says "active/saved projects only", target non-projectless threads outside `electron-saved-workspace-roots` while preserving projectless chats and the current thread.
+3. Confirm the cleanup scope from the user's instruction. If the user says "active/saved projects only", target non-projectless, non-subagent threads outside `electron-saved-workspace-roots` while preserving projectless chats, generated Codex workspaces, and the current thread.
 4. Create a timestamped backup under the current workspace `work/` directory:
    - target list JSON
    - consistent SQLite backups using `sqlite3.Connection.backup`
