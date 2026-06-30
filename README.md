@@ -24,6 +24,8 @@ The goal is for the mobile-visible project list to match the active saved projec
 - Reads saved project roots from `.codex-global-state.json`.
 - Classifies threads in `state_*.sqlite` by `cwd`.
 - Keeps saved projects, projectless chats, and the current thread by default.
+- Inspects legacy `.codex/sqlite/state_*.sqlite` and `.codex/sqlite/logs_*.sqlite` when mobile still shows entries that are already absent from the active database.
+- Treats renamed saved projects as display-label sync issues, not stale deletion targets.
 - Finds non-active project threads outside saved project roots.
 - Finds deleted `cwd` entries and stale archived threads.
 - Backs up affected metadata before changing anything.

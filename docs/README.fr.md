@@ -9,6 +9,8 @@ Elle est utile lorsque d'anciens projets, des threads archivés, des chemins de 
 - Lit les racines de projets enregistrées depuis `.codex-global-state.json`.
 - Classe les threads de `state_*.sqlite` selon leur `cwd`.
 - Conserve par défaut les projets enregistrés, les conversations sans projet et le thread actuel.
+- Si Codex mobile affiche encore des entrées déjà absentes de la base active, elle inspecte aussi les fichiers legacy `.codex/sqlite/state_*.sqlite` et `.codex/sqlite/logs_*.sqlite`.
+- Elle traite les projets enregistrés renommés comme des problèmes de synchronisation du nom affiché, pas comme des cibles obsolètes à supprimer.
 - Repère les threads de projet inactifs situés en dehors des racines enregistrées.
 - Repère les entrées `cwd` supprimées et les anciens threads archivés.
 - Sauvegarde les métadonnées concernées avant toute modification.

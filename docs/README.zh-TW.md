@@ -9,6 +9,8 @@
 - 從 `.codex-global-state.json` 讀取已儲存的專案根目錄。
 - 依照 `cwd` 分類 `state_*.sqlite` 中的 thread。
 - 預設保留已儲存專案、projectless 一般聊天與目前 thread。
+- 如果行動版仍顯示已不在目前作用中資料庫內的項目，也會檢查 legacy `.codex/sqlite/state_*.sqlite` 和 `.codex/sqlite/logs_*.sqlite`。
+- 將 Desktop 中僅改名的已儲存專案視為顯示名稱同步問題，而不是過期刪除目標。
 - 找出已儲存專案之外的非作用中專案型 thread。
 - 找出已刪除的 `cwd` 項目與過期的封存 thread。
 - 修改前先備份相關 metadata。

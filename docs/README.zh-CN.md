@@ -9,6 +9,8 @@
 - 从 `.codex-global-state.json` 读取已保存的项目根目录。
 - 按 `cwd` 对 `state_*.sqlite` 中的线程进行分类。
 - 默认保留已保存项目、projectless 普通聊天和当前线程。
+- 如果移动端仍显示已不在当前活动数据库中的条目，还会检查 legacy `.codex/sqlite/state_*.sqlite` 和 `.codex/sqlite/logs_*.sqlite`。
+- 将 Desktop 中仅改名的已保存项目视为显示名称同步问题，而不是陈旧删除目标。
 - 查找已保存项目之外的非活动项目类线程。
 - 查找已删除的 `cwd` 条目和过期归档线程。
 - 在修改前备份相关元数据。

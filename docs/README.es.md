@@ -9,6 +9,8 @@
 - Lee las raíces de proyectos guardados desde `.codex-global-state.json`.
 - Clasifica los hilos de `state_*.sqlite` por `cwd`.
 - Conserva por defecto los proyectos guardados, los chats sin proyecto y el hilo actual.
+- Si Codex móvil sigue mostrando entradas que ya no están en la base de datos activa, también inspecciona legacy `.codex/sqlite/state_*.sqlite` y `.codex/sqlite/logs_*.sqlite`.
+- Trata los proyectos guardados renombrados como problemas de sincronización de nombre visible, no como objetivos obsoletos para eliminar.
 - Encuentra hilos de proyecto no activos fuera de las raíces guardadas.
 - Encuentra entradas `cwd` eliminadas e hilos archivados obsoletos.
 - Crea una copia de seguridad de los metadatos afectados antes de modificar nada.

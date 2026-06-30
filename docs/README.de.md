@@ -9,6 +9,8 @@ Verwende ihn, wenn nach dem Löschen oder Umorganisieren von Projekten weiterhin
 - Liest gespeicherte Projektwurzeln aus `.codex-global-state.json`.
 - Klassifiziert Threads in `state_*.sqlite` anhand von `cwd`.
 - Behält standardmäßig gespeicherte Projekte, projektlose Chats und den aktuellen Thread.
+- Wenn Codex Mobile weiterhin Einträge zeigt, die in der aktiven Datenbank nicht mehr vorhanden sind, prüft der Skill auch legacy `.codex/sqlite/state_*.sqlite` und `.codex/sqlite/logs_*.sqlite`.
+- Umbenannte gespeicherte Projekte werden als Synchronisationsproblem des Anzeigenamens behandelt, nicht als veraltete Löschziele.
 - Findet inaktive projektbezogene Threads außerhalb gespeicherter Projektwurzeln.
 - Findet gelöschte `cwd`-Einträge und veraltete archivierte Threads.
 - Erstellt vor Änderungen eine Sicherung der betroffenen Metadaten.
