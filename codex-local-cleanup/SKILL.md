@@ -33,7 +33,7 @@ Use local Codex files only:
 - `archived_sessions/rollout-*.jsonl`: archived conversation files.
 - `config.toml`: trusted project roots.
 
-If both top-level `.codex/state_*.sqlite` and legacy `.codex/sqlite/state_*.sqlite` exist, compare migration count and modified time first. Prefer the current active DB and treat the older location as legacy unless the user explicitly asks to clean legacy state too.
+If both top-level `.codex/state_*.sqlite` and legacy `.codex/sqlite/state_*.sqlite` exist, compare migration count and modified time first. Prefer the current active DB for normal cleanup. If mobile still shows entries that are absent from the active DB, inspect legacy `.codex/sqlite/state_*.sqlite` and `.codex/sqlite/logs_*.sqlite` as an additional mobile-visible stale source before reporting that cleanup is complete.
 
 ## Classification
 
@@ -43,6 +43,7 @@ Maintain by default:
 
 - Threads whose `cwd` equals or is under a saved project root.
 - The current thread.
+- Saved project roots listed in `electron-saved-workspace-roots`, `project-order`, `pinned-project-ids`, or `electron-workspace-root-labels`. If Desktop shows a renamed project but mobile shows the raw folder name, treat that as a label/display-sync issue, not stale metadata.
 - Projectless/general chat threads unless the user explicitly asks to remove them.
 - Threads listed in `projectless-thread-ids`, `thread-projectless-output-directories`, or `thread-workspace-root-hints` unless the user explicitly asks to remove projectless/general chat state.
 - Subagent threads whose `thread_source` is `subagent`, unless their parent thread is also being removed and the user explicitly included spawned agent state.
@@ -53,6 +54,7 @@ Cleanup candidates:
 - Non-projectless, non-subagent threads whose `cwd` is outside saved project roots, when the user asks to keep only current saved/active projects.
 - Threads with `cwd` paths that do not exist.
 - Archived threads whose `cwd` is outside saved project roots, excluding projectless/general chat markers unless the user asked to prune those too.
+- Legacy `.codex/sqlite/state_*.sqlite` rows that match the same cleanup criteria when mobile still shows entries already removed from the active top-level DB.
 - `config.toml` `[projects.'...']` blocks for paths that do not exist.
 - `config.toml` `[projects.'...']` blocks outside saved project roots, when cleaning non-active projects. Preserve current projectless workspace trust entries unless explicitly asked to remove general chat state.
 
@@ -72,12 +74,12 @@ For Windows paths, normalize `\\?\` prefixes, slash direction, trailing slashes,
 5. Remove only validated target rollout files.
 6. Remove matching `session_index.jsonl` lines.
 7. Remove matching prompt-history, thread-permission, unread-thread, thread-client-id, projectless, workspace-hint, and follow-up keys from `.codex-global-state.json` and `.bak`.
-8. Delete target rows from `state_*.sqlite` tables in dependency order:
+8. Delete target rows from active `state_*.sqlite` tables, and legacy `.codex/sqlite/state_*.sqlite` tables when included, in dependency order:
    - `thread_dynamic_tools`
    - `thread_spawn_edges`
    - `agent_job_items`
    - `threads`
-9. Delete matching `logs_*.sqlite` rows by `thread_id`. Avoid broad text deletes that would erase the current cleanup thread's diagnostic logs unless the user explicitly asks.
+9. Delete matching active and included legacy `logs_*.sqlite` rows by `thread_id`. Avoid broad text deletes that would erase the current cleanup thread's diagnostic logs unless the user explicitly asks.
 10. For `config.toml`, remove only the selected `[projects.'...']` blocks and their body lines.
 11. Run SQLite checkpoint/VACUUM after writes when practical.
 12. Record post-cleanup sizes for modified files and DBs.
