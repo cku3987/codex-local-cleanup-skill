@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 620" role="img" aria-labelledby="title desc">
   <title id="title">Codex Local Cleanup flow</title>
-  <desc id="desc">Desktop Codex shows only active saved projects, mobile Codex before cleanup shows stale deleted project metadata too, and mobile Codex after cleanup shows only the active saved projects.</desc>
+  <desc id="desc">Desktop Codex shows only active local projects, mobile Codex before cleanup shows stale deleted project metadata too, and mobile Codex after cleanup shows only the active local projects.</desc>
   <defs>
     <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
       <path d="M2 2 L10 6 L2 10 Z" fill="#334155"/>
@@ -36,7 +36,7 @@
     <text class="panel-title" x="78" y="177">Desktop Codex</text>
     <rect x="78" y="222" width="112" height="26" rx="13" fill="#0284c7"/>
     <text class="badge" x="96" y="240">9 active</text>
-    <text class="panel-note" x="78" y="270">Saved projects only</text>
+    <text class="panel-note" x="78" y="270">Active local projects</text>
 
     <g>
       <rect x="78" y="292" width="202" height="24" rx="7" fill="#f1f5f9"/>
@@ -132,5 +132,5 @@
     <text class="muted-text" x="934" y="489">More active projects...</text>
   </g>
 
-  <text class="small" x="58" y="586">The skill targets local Codex Desktop metadata, not source project files. It backs up before cleanup and preserves saved projects, projectless chats, and the current thread by default.</text>
+  <text class="small" x="58" y="586">The skill targets local Codex Desktop metadata, not source project files. It backs up first and preserves active projects, projectless chats, and the current thread by default.</text>
 </svg>

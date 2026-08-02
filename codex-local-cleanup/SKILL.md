@@ -1,125 +1,144 @@
 ---
 name: codex-local-cleanup
-description: Clean local Codex Desktop metadata under $CODEX_HOME or ~/.codex by safely identifying mobile-visible stale projects, non-active project threads outside saved project roots, archived threads, deleted workspace cwd entries, session JSONL files, thread indexes, global state, config trust entries, and SQLite rows; always back up first, keep saved projects/projectless chats/current thread unless explicitly requested, and verify with read-only checks before reporting.
+description: Safely inspect and clean stale local Codex Desktop project and thread state under $CODEX_HOME or ~/.codex when removed projects, deleted workspace paths, archived threads, or mobile-visible sidebar entries remain; use current local-project metadata and the App Server thread API first, back up before writes, preserve active projects/projectless chats/current thread by default, and reserve direct SQLite repair for verified fallback cases.
 ---
 
 # Codex Local Cleanup
 
-Use this skill when the user wants to clean local Codex Desktop remnants in `~/.codex`, such as deleted project traces, stale archived threads, old project trust entries, or mobile-visible sidebar clutter.
+Clean stale local Codex Desktop project and thread state without touching user source projects.
 
 ## Safety Rules
 
-- Treat `~/.codex` as live application state. Do not modify it until the target set is explicit and backed up.
+- Treat `~/.codex` as live application state. Keep the first pass read-only.
+- Require an explicit target set and create a backup before any write.
 - Never delete or rewrite `auth.json`, `installation_id`, `skills/`, `plugins/`, `automations/`, `.sandbox-secrets/`, or user source projects.
-- Never clean the current active thread, even if its cwd is projectless or outside saved projects.
-- Do not remove general chat threads unless the user explicitly asks for them.
-- Prefer narrow cleanup scopes:
-  - non-projectless project threads outside saved project roots
-  - stale archived threads outside saved project roots
-  - deleted cwd threads
-  - dead `[projects.'...']` trust blocks in `config.toml`
-- If a title or preview contains secrets, do not repeat the secret in chat output.
-- Before deleting files or DB rows, verify resolved paths stay under `~/.codex/sessions` or `~/.codex/archived_sessions`.
+- Never clean the current thread. If its ID cannot be identified reliably, stop before writes.
+- Preserve projectless/general chats unless the user explicitly includes them.
+- Preserve automation threads and automation-run state unless the user explicitly targets a removed automation and its runs.
+- Prefer the Desktop **Remove** action for a project first. Use this workflow when the project or its threads remain visible after removal and refresh/restart.
+- Prefer supported App Server lifecycle methods over direct session-file or SQLite edits.
+- Do not expose secrets from historical titles, previews, prompts, paths, or backups.
+- Before deleting rollout files, resolve and verify every path is below `~/.codex/sessions` or `~/.codex/archived_sessions`.
 
-## Data Sources
+## Cleanup Modes
 
-Use local Codex files only:
+Keep these scopes separate:
 
-- `.codex-global-state.json`: saved project roots, project order, pinned projects, prompt history, thread permissions, `projectless-thread-ids`, `thread-projectless-output-directories`, `thread-workspace-root-hints`, `queued-follow-ups`, and nested `electron-persisted-atom-state` UI caches.
-- `state_*.sqlite`: thread metadata, cwd, archived flag, rollout path, `source`, `thread_source`, and agent/subagent fields.
-- `logs_*.sqlite`: diagnostic logs.
-- `session_index.jsonl`: thread index.
-- `sessions/**/rollout-*.jsonl`: active/non-archived conversation files.
-- `archived_sessions/rollout-*.jsonl`: archived conversation files.
+- **Visibility cleanup**: stale project definitions, assignments, sidebar state, and selected project threads. Use this by default.
+- **Archive cleanup**: archived threads selected by the user. Do not infer consent from a visibility-cleanup request.
+- **Storage cleanup**: diagnostic logs, old backups, and database compaction. Run only when the user asks to reclaim space.
+- **Repair fallback**: direct JSONL or SQLite repair after the supported API is unavailable, fails, or leaves a proven orphan.
+
+## Current Data Model
+
+Inspect local files only. Discover versions and schemas instead of assuming fixed filenames or tables.
+
+- `.codex-global-state.json` and `.bak`:
+  - Current project definitions: `local-projects`, whose entries contain `id`, `name`, and one or more `rootPaths`.
+  - Current project visibility/order: `project-order`, `pinned-project-ids`, `selected-project`, and `active-workspace-roots`.
+  - Current thread mapping: `thread-project-assignments`, including `projectId`, `projectKind`, `cwd`, optional `path`, and `pendingCoreUpdate`.
+  - Projectless state: `projectless-thread-ids`, `thread-projectless-output-directories`, and `thread-workspace-root-hints`.
+  - UI state under `electron-persisted-atom-state`, including thread descriptions, unread IDs, client IDs, browser/workspace state, and project ordering.
+  - Legacy compatibility keys: `electron-saved-workspace-roots` and `electron-workspace-root-labels`.
+- Top-level `state_*.sqlite`: authoritative current thread metadata. Compare successful `_sqlx_migrations`, modification time, columns, and rollout coverage before selecting a DB.
+- `sessions/**/rollout-*.jsonl` and `archived_sessions/rollout-*.jsonl`: persisted active and archived threads.
+- `sqlite/codex-dev.db`: Desktop-derived catalog state such as `local_thread_catalog` and sync metadata. Treat it as a verification/reconciliation cache, not the primary deletion source.
+- Legacy `sqlite/state_*.sqlite` and `sqlite/logs_*.sqlite`: inspect only for migration residue or a mobile-visible orphan absent from current state.
+- `session_index.jsonl`: compatibility index. Never use it as the authoritative thread inventory.
+- `logs_*.sqlite`: diagnostics. Exclude from visibility cleanup unless a target-specific residual is proven; include in storage cleanup only with user consent.
+- `goals_*.sqlite` and `memories_*.sqlite`: separate thread-related state. Do not touch them unless rows are proven orphaned and the user requested complete residual cleanup.
+- `sqlite/codex-dev.db` automation and inbox tables: preserve rows linked to `thread_source = automation` unless the automation itself is an explicit cleanup target.
 - `config.toml`: trusted project roots.
-
-If both top-level `.codex/state_*.sqlite` and legacy `.codex/sqlite/state_*.sqlite` exist, compare migration count and modified time first. Prefer the current active DB for normal cleanup. If mobile still shows entries that are absent from the active DB, inspect legacy `.codex/sqlite/state_*.sqlite` and `.codex/sqlite/logs_*.sqlite` as an additional mobile-visible stale source before reporting that cleanup is complete.
 
 ## Classification
 
-Saved project roots come from `.codex-global-state.json` key `electron-saved-workspace-roots`.
+Build the active project set in this order:
 
-Maintain by default:
+1. Read `local-projects` and index entries by project ID.
+2. Build visible project IDs from `project-order`, `pinned-project-ids`, and `selected-project`; preserve every matching `local-projects` entry.
+3. Preserve `active-workspace-roots`, even during a partially completed project migration.
+4. Build active roots from every `rootPaths` item of preserved projects. Support multi-folder projects.
+5. Use `electron-saved-workspace-roots` only as a fallback when the current project keys are absent. Do not union stale legacy roots into an otherwise valid current project set.
 
-- Threads whose `cwd` equals or is under a saved project root.
+Preserve by default:
+
 - The current thread.
-- Saved project roots listed in `electron-saved-workspace-roots`, `project-order`, `pinned-project-ids`, or `electron-workspace-root-labels`. If Desktop shows a renamed project but mobile shows the raw folder name, treat that as a label/display-sync issue, not stale metadata.
-- Projectless/general chat threads unless the user explicitly asks to remove them.
-- Threads listed in `projectless-thread-ids`, `thread-projectless-output-directories`, or `thread-workspace-root-hints` unless the user explicitly asks to remove projectless/general chat state.
-- Subagent threads whose `thread_source` is `subagent`, unless their parent thread is also being removed and the user explicitly included spawned agent state.
-- Archived threads under saved project roots unless the user asks to prune those archives too.
+- Threads assigned by `thread-project-assignments` to a preserved project ID.
+- Threads whose normalized `cwd` is equal to or below an active root when no reliable assignment exists.
+- Projectless/general chats and their projectless output/hint records.
+- Automation threads and runs, including archived runs, unless explicitly selected with their owning automation.
+- Generated Codex workspaces and worktrees tied to a preserved project.
+- Subagent threads unless their root parent is selected and the user accepts App Server descendant deletion.
+- Archived threads belonging to preserved projects unless archive cleanup was requested.
 
-Cleanup candidates:
+Treat as candidates, not automatic deletions:
 
-- Non-projectless, non-subagent threads whose `cwd` is outside saved project roots, when the user asks to keep only current saved/active projects.
-- Threads with `cwd` paths that do not exist.
-- Archived threads whose `cwd` is outside saved project roots, excluding projectless/general chat markers unless the user asked to prune those too.
-- Legacy `.codex/sqlite/state_*.sqlite` rows that match the same cleanup criteria when mobile still shows entries already removed from the active top-level DB.
-- `config.toml` `[projects.'...']` blocks for paths that do not exist.
-- `config.toml` `[projects.'...']` blocks outside saved project roots, when cleaning non-active projects. Preserve current projectless workspace trust entries unless explicitly asked to remove general chat state.
+- A `thread-project-assignments` entry whose `projectId` is absent from `local-projects` and which is not projectless or current.
+- A project entry absent from visible order/pinned/selected state after the Desktop **Remove** flow, when the user confirms it should no longer exist.
+- A non-projectless thread assigned to a removed project.
+- A non-projectless thread with no current assignment whose normalized `cwd` is outside all active roots.
+- A thread whose `cwd` no longer exists, unless it belongs to a preserved project, remote project, worktree, or generated workspace.
+- A legacy-state row or catalog entry only when the authoritative current thread list no longer contains it.
+- A dead `config.toml` project trust block.
 
-For Windows paths, normalize `\\?\` prefixes, slash direction, trailing slashes, and case before comparing paths. Do not rely on `os.path.commonpath` alone if path forms are mixed; compare normalized strings with `root == cwd or cwd.startswith(root + "\\")`.
+If a Desktop project name differs from a raw folder name on mobile, compare `local-projects.name` and legacy labels. Treat a valid project-ID/root match as a display-sync problem, not a deletion target.
+
+For Windows paths, normalize `\\?\` prefixes, separators, trailing separators, and case. Compare `root == cwd` or `cwd.startswith(root + "\\")`; do not rely on mixed-form `commonpath` results.
 
 ## Workflow
 
-1. Read `.codex-global-state.json` and `state_*.sqlite` in read-only mode.
-2. Print a concise candidate summary: count, cwd, archived count, whether each path exists, and whether it is under a saved project root.
-3. Confirm the cleanup scope from the user's instruction. If the user says "active/saved projects only", target non-projectless, non-subagent threads outside `electron-saved-workspace-roots` while preserving projectless chats, generated Codex workspaces, and the current thread.
-4. Create a timestamped backup under the current workspace `work/` directory:
-   - target list JSON
+1. Record the installed Desktop and CLI versions and locate `CODEX_HOME`.
+2. Try the supported UI path first: remove the stale project in Desktop, refresh or restart Desktop, and reconnect Remote/mobile when practical.
+3. Read current global project state and the selected top-level state DB in read-only mode. Page through App Server `thread/list` when available, including active and archived threads.
+4. Print a concise candidate report with project ID status, assignment status, cwd existence, archived state, descendant count, and preservation reason. Redact sensitive titles and paths.
+5. Resolve the current thread ID and remove it from the candidate set. Stop if it cannot be resolved safely.
+6. Confirm the requested cleanup mode and exact target set. A request for active-project cleanup does not authorize archive or storage cleanup.
+7. Create a timestamped backup under the current workspace `work/` directory containing:
+   - target and preservation manifests
    - consistent SQLite backups using `sqlite3.Connection.backup`
-   - raw copies of `.codex-global-state.json`, `.bak`, `session_index.jsonl`, and `config.toml`
-   - target rollout JSONL files
-   - pre-cleanup size manifest for target rollout files, metadata files, and modified SQLite DB files
-5. Remove only validated target rollout files.
-6. Remove matching `session_index.jsonl` lines.
-7. Remove matching prompt-history, thread-permission, unread-thread, thread-client-id, projectless, workspace-hint, and follow-up keys from `.codex-global-state.json` and `.bak`.
-8. Delete target rows from active `state_*.sqlite` tables, and legacy `.codex/sqlite/state_*.sqlite` tables when included, in dependency order:
-   - `thread_dynamic_tools`
-   - `thread_spawn_edges`
-   - `agent_job_items`
-   - `threads`
-9. Delete matching active and included legacy `logs_*.sqlite` rows by `thread_id`. Avoid broad text deletes that would erase the current cleanup thread's diagnostic logs unless the user explicitly asks.
-10. For `config.toml`, remove only the selected `[projects.'...']` blocks and their body lines.
-11. Run SQLite checkpoint/VACUUM after writes when practical.
-12. Record post-cleanup sizes for modified files and DBs.
-13. Verify before reporting success.
+   - copies of global state, its `.bak`, `session_index.jsonl`, and `config.toml`
+   - selected rollout files
+   - pre-cleanup byte sizes
+8. For selected persisted threads, prefer a callable Codex thread-delete tool. Otherwise use the official App Server JSON-RPC `thread/delete` method after the `initialize`/`initialized` handshake.
+   - Delete only root target IDs because App Server also deletes spawned descendants.
+   - Tell the user the descendant count before deletion.
+   - Treat a missing rollout as already deleted only when the App Server reports success.
+9. After successful thread deletion, update only stale Desktop project and assignment state tied to confirmed targets:
+   - `local-projects`, `project-order`, `pinned-project-ids`, `selected-project`, `thread-project-assignments`, and `active-workspace-roots`
+   - matching projectless/output/hint, queued-follow-up, permission, unread, client-ID, description, browser-tab, workspace-state, and project-order UI entries
+   - legacy saved-root/label keys only when they refer to the same confirmed removed project
+10. Do not remove `codex-writing-block-deleted-thread-v1:*` or other unknown tombstone-like keys without proving their semantics. Do not directly edit `local_thread_catalog` during the normal path; allow Desktop to reconcile it.
+11. Remove dead `config.toml` trust blocks only when their normalized path is confirmed outside active projects and the requested scope includes trust cleanup.
+12. Use direct repair only for residual targets that remain after the supported path:
+   - inspect `sqlite_master` and foreign keys before choosing tables
+   - remove rows only from tables that exist and reference the selected thread IDs
+   - delete validated rollout files and compatibility-index entries
+   - include legacy state only when it contains the proven residual
+   - exclude logs, goals, memories, and the derived catalog unless separately justified by the requested mode
+   - exclude automation and inbox tables unless a removed automation is an explicit target
+13. Avoid checkpoint, `VACUUM`, or large log deletes while the DB is busy. Run compaction only for an explicit storage cleanup and report lock failures honestly.
+14. Record post-cleanup sizes and verify before reporting success.
 
 ## Verification
 
-Run checks that directly prove the result:
-
-- `PRAGMA integrity_check` for modified SQLite DBs.
-- Target thread IDs no longer exist in `state_*.sqlite`.
-- Target rollout files no longer exist.
-- Target IDs no longer appear in `session_index.jsonl`.
-- Target IDs no longer appear in `.codex-global-state.json` or `.bak`, except when the current conversation naturally mentions them and that scope was intentionally preserved. Check nested `electron-persisted-atom-state` keys such as heartbeat permissions, unread thread IDs, and thread client IDs.
-- Archived-outside-active count is zero when cleaning outside-project archives.
-- Outside-active non-projectless thread count is zero when cleaning mobile-visible non-active projects.
-- `config.toml` outside-active non-projectless trust block count is zero when cleaning non-active projects.
-- Dead `config.toml` project blocks are zero when cleaning missing trust entries.
-- `codex_app.list_threads` searches for removed titles or paths return no removed target threads when the app tool is available.
+- Run `PRAGMA integrity_check` for every modified SQLite DB.
+- Confirm removed IDs are absent from App Server `thread/list` and `thread/read`, including archived results.
+- Confirm selected rollout files are absent and preserved rollout files still exist.
+- Confirm removed IDs are absent from the current state DB and any included legacy DB.
+- Confirm removed project IDs and assignments are absent from current global state while preserved project IDs, `rootPaths`, names, projectless records, and the current thread remain.
+- Confirm automation threads, automation runs, and their owning automation definitions remain unchanged unless explicitly selected.
+- Confirm `local_thread_catalog` reconciles without the removed IDs; report a catalog-only residual instead of editing it silently.
+- Treat `session_index.jsonl` as a compatibility check only.
+- Verify `config.toml` trust blocks only for the requested scope.
+- When Remote/mobile is involved, ask the user to reconnect or refresh and distinguish local verification from device UI verification.
 
 ## Size Accounting
 
-Report cleanup size conservatively:
-
-- Directly reclaimed bytes: sum of deleted rollout JSONL files and other deleted files that no longer exist after cleanup.
-- SQLite reclaimed bytes: report DB file size delta before/after only when measured. If rows were deleted but the DB file did not shrink because pages/WAL are reused, report the deleted row counts separately instead of claiming reclaimed bytes.
-- Backup size: total bytes written under the backup directory.
-- Net disk change: direct reclaimed bytes minus backup size, when both are known. Make clear that backups intentionally increase disk usage until the user deletes them.
-- Human-readable units: include bytes and KiB/MiB for non-trivial values.
+- Report directly reclaimed bytes from files that no longer exist.
+- Report SQLite file-size deltas only when measured. If pages remain allocated, report deleted row counts instead of reclaimed bytes.
+- Report backup size separately and calculate net disk change only when both sides are known.
+- Explain that visibility cleanup may reclaim little space because logs and compaction are separate.
 
 ## Reporting
 
-Report in Korean unless the user asks otherwise. Include:
-
-- cleanup scope used
-- number of threads removed
-- files/DBs touched
-- backup directory
-- directly reclaimed size, backup size, and DB row/file-size notes
-- verification results
-- any known residual traces, especially current-thread diagnostic logs that were intentionally preserved
-
-Keep the final answer concise and avoid exposing secrets from historical titles or previews.
+Report in Korean unless the user asks otherwise. Include the cleanup mode, target and descendant counts, API versus fallback path, files/DBs touched, backup directory, size accounting, verification results, and known residuals. Keep sensitive historical content redacted.

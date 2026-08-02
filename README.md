@@ -4,7 +4,7 @@
 
 It is intended for cases where old project entries, archived threads, deleted workspace paths, or mobile-visible sidebar clutter remain after projects were removed or reorganized.
 
-The goal is for the mobile-visible project list to match the active saved projects shown in Codex Desktop.
+The goal is for the mobile-visible project list to match the active local projects shown in Codex Desktop.
 
 ![Codex Local Cleanup flow](assets/codex-local-cleanup-flow.svg)
 
@@ -21,15 +21,18 @@ The goal is for the mobile-visible project list to match the active saved projec
 
 ## What It Does
 
-- Reads saved project roots from `.codex-global-state.json`.
-- Classifies threads in `state_*.sqlite` by `cwd`.
-- Keeps saved projects, projectless chats, and the current thread by default.
-- Inspects legacy `.codex/sqlite/state_*.sqlite` and `.codex/sqlite/logs_*.sqlite` when mobile still shows entries that are already absent from the active database.
-- Treats renamed saved projects as display-label sync issues, not stale deletion targets.
-- Finds non-active project threads outside saved project roots.
+- Reads current project definitions from `local-projects` and thread mappings from `thread-project-assignments`.
+- Supports multi-folder projects through each project's `rootPaths`; legacy saved roots are fallback data only.
+- Keeps active projects, projectless chats, automation threads, generated workspaces, and the current thread by default.
+- Uses the supported Codex App Server `thread/delete` lifecycle before direct JSONL or SQLite repair.
+- Treats `.codex/sqlite/codex-dev.db` as a derived Desktop catalog to verify after reconciliation, not the primary deletion source.
+- Treats `session_index.jsonl` and legacy `.codex/sqlite/state_*.sqlite` as compatibility sources rather than authoritative inventories.
+- Treats renamed projects as display-label sync issues, not stale deletion targets.
+- Finds dangling project assignments and non-active project threads outside current project roots.
 - Finds deleted `cwd` entries and stale archived threads.
 - Backs up affected metadata before changing anything.
-- Cleans matching session JSONL files, thread indexes, global state, `config.toml`, and SQLite rows.
+- Separates visibility cleanup, archive cleanup, storage cleanup, and last-resort repair.
+- Cleans confirmed project state, assignments, session metadata, trust entries, and residual SQLite rows only within the selected scope.
 - Verifies SQLite integrity and checks that removed targets no longer appear.
 
 ## Installation
@@ -51,7 +54,7 @@ Restart Codex Desktop after installation if the skill does not appear immediatel
 ## Example Prompts
 
 ```text
-$codex-local-cleanup Keep my saved projects and projectless chats, then back up and clean non-active project metadata from local Codex.
+$codex-local-cleanup Keep my active local projects and projectless chats, then back up and clean non-active project metadata from local Codex.
 ```
 
 ```text
@@ -59,7 +62,7 @@ $codex-local-cleanup Find deleted cwd threads in my local Codex metadata, back t
 ```
 
 ```text
-$codex-local-cleanup Clean saved-project-outside project traces, but do not delete archived_sessions.
+$codex-local-cleanup Clean project traces outside my active local projects, but do not delete archived sessions or diagnostic logs.
 ```
 
 ## Safety Notes
@@ -70,6 +73,8 @@ Important risk and permission notes:
 
 - This is local application-state cleanup, not source-code cleanup.
 - It can delete Codex thread metadata, session JSONL files, sidebar indexes, trust entries, and SQLite rows for selected targets.
+- It prefers the Desktop **Remove** action and the supported App Server thread lifecycle before direct metadata repair.
+- Visibility cleanup does not imply archive deletion, log cleanup, backup deletion, or database compaction.
 - In full-access or no-approval environments, Codex may be able to write immediately. Ask for a read-only inventory first if you are unsure.
 - Do not run broad cleanup from a vague prompt. Review the target list, backup path, and preservation rules before allowing writes.
 - Backups may contain local paths, thread titles, prompts, and conversation content. Keep backups private.
@@ -84,7 +89,7 @@ It should not delete or rewrite:
 - `.sandbox-secrets/`
 - user source projects
 
-The skill is intentionally conservative. It preserves saved project roots, projectless chats, and the current thread unless explicitly instructed otherwise.
+The skill is intentionally conservative. It preserves current local projects, projectless chats, and the current thread unless explicitly instructed otherwise. It also refuses to remove unknown tombstone-like state without proving its purpose.
 
 ## Repository Layout
 

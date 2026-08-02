@@ -6,15 +6,17 @@ Verwende ihn, wenn nach dem Löschen oder Umorganisieren von Projekten weiterhin
 
 ## Funktionen
 
-- Liest gespeicherte Projektwurzeln aus `.codex-global-state.json`.
-- Klassifiziert Threads in `state_*.sqlite` anhand von `cwd`.
-- Behält standardmäßig gespeicherte Projekte, projektlose Chats und den aktuellen Thread.
-- Wenn Codex Mobile weiterhin Einträge zeigt, die in der aktiven Datenbank nicht mehr vorhanden sind, prüft der Skill auch legacy `.codex/sqlite/state_*.sqlite` und `.codex/sqlite/logs_*.sqlite`.
-- Umbenannte gespeicherte Projekte werden als Synchronisationsproblem des Anzeigenamens behandelt, nicht als veraltete Löschziele.
-- Findet inaktive projektbezogene Threads außerhalb gespeicherter Projektwurzeln.
+- Liest aktuelle Projektdefinitionen aus `local-projects` und Thread-Zuordnungen aus `thread-project-assignments`.
+- Unterstützt Projekte mit mehreren Ordnern über `rootPaths`; alte gespeicherte Wurzeln dienen nur als Fallback.
+- Behält standardmäßig aktive Projekte, projektlose Chats, Automation-Threads, generierte Arbeitsbereiche und den aktuellen Thread.
+- Bevorzugt die offizielle Codex-App-Server-Methode `thread/delete` vor direkten JSONL- oder SQLite-Reparaturen.
+- Behandelt `.codex/sqlite/codex-dev.db` als abgeleiteten Katalog zur Prüfung nach der Synchronisierung, nicht als primäre Löschquelle.
+- Behandelt `session_index.jsonl` und Legacy-Datenbanken als Kompatibilitätsdaten, nicht als maßgebliche Inventare.
+- Umbenannte Projekte werden als Synchronisationsproblem des Anzeigenamens behandelt, nicht als Löschziele.
+- Findet verwaiste Projektzuordnungen und projektbezogene Threads außerhalb aktiver Projekte.
 - Findet gelöschte `cwd`-Einträge und veraltete archivierte Threads.
 - Erstellt vor Änderungen eine Sicherung der betroffenen Metadaten.
-- Bereinigt passende session-JSONL-Dateien, Thread-Indizes, global state, `config.toml` und SQLite-Zeilen.
+- Trennt Sichtbarkeits-, Archiv- und Speicherbereinigung von der abschließenden Direktreparatur und bearbeitet nur bestätigte Ziele.
 - Prüft die SQLite-Integrität und bestätigt, dass entfernte Ziele nicht mehr vorhanden sind.
 
 ## Installation
@@ -36,7 +38,7 @@ Starte Codex Desktop neu, falls der Skill nicht sofort angezeigt wird.
 ## Beispiel-Prompts
 
 ```text
-$codex-local-cleanup Keep my saved projects and projectless chats, then back up and clean non-active project metadata from local Codex.
+$codex-local-cleanup Keep my active local projects and projectless chats, then back up and clean non-active project metadata from local Codex.
 ```
 
 ```text
@@ -44,7 +46,7 @@ $codex-local-cleanup Find deleted cwd threads in my local Codex metadata, back t
 ```
 
 ```text
-$codex-local-cleanup Clean saved-project-outside project traces, but do not delete archived_sessions.
+$codex-local-cleanup Clean project traces outside my active local projects, but do not delete archived sessions or diagnostic logs.
 ```
 
 ## Sicherheitshinweise
@@ -55,6 +57,8 @@ Wichtige Risiko- und Berechtigungshinweise:
 
 - Dies ist eine Bereinigung des lokalen Anwendungsstatus, keine Bereinigung von Quellcode.
 - Der Skill kann Codex-Thread-Metadaten, Session-JSONL-Dateien, Sidebar-Indizes, Trust-Einträge und SQLite-Zeilen für ausgewählte Ziele löschen.
+- Er bevorzugt **Remove** in Desktop und den offiziellen App-Server-Thread-Lebenszyklus; direkte Reparaturen sind auf bestätigte Reste beschränkt.
+- Eine Sichtbarkeitsbereinigung bedeutet nicht, Archive, Diagnose-Logs oder Backups zu löschen oder die Datenbank zu komprimieren.
 - In Umgebungen mit Vollzugriff oder ohne Bestätigungen kann Codex sofort schreiben. Wenn du unsicher bist, fordere zuerst ein schreibgeschütztes Inventar an.
 - Starte keine breite Bereinigung mit einem unklaren Prompt. Prüfe vor Schreibzugriffen die Zielliste, den Backup-Pfad und die Erhaltungsregeln.
 - Backups können lokale Pfade, Thread-Titel, Prompts und Gesprächsinhalte enthalten. Behandle Backups vertraulich.
@@ -69,7 +73,7 @@ Folgende Elemente sollten nicht gelöscht oder überschrieben werden:
 - `.sandbox-secrets/`
 - Quellcode-Projekte des Benutzers
 
-Der Skill ist bewusst konservativ. Er bewahrt gespeicherte Projektwurzeln, projektlose Chats und den aktuellen Thread, sofern nicht ausdrücklich etwas anderes verlangt wird.
+Der Skill ist bewusst konservativ. Er bewahrt aktuelle lokale Projekte, projektlose Chats und den aktuellen Thread, sofern nicht ausdrücklich etwas anderes verlangt wird, und löscht keine tombstone-artigen Zustände mit ungeklärter Bedeutung.
 
 ## Lizenz
 

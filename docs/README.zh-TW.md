@@ -6,15 +6,17 @@
 
 ## 功能
 
-- 從 `.codex-global-state.json` 讀取已儲存的專案根目錄。
-- 依照 `cwd` 分類 `state_*.sqlite` 中的 thread。
-- 預設保留已儲存專案、projectless 一般聊天與目前 thread。
-- 如果行動版仍顯示已不在目前作用中資料庫內的項目，也會檢查 legacy `.codex/sqlite/state_*.sqlite` 和 `.codex/sqlite/logs_*.sqlite`。
-- 將 Desktop 中僅改名的已儲存專案視為顯示名稱同步問題，而不是過期刪除目標。
-- 找出已儲存專案之外的非作用中專案型 thread。
+- 從 `local-projects` 讀取目前專案定義，並從 `thread-project-assignments` 讀取 thread 指派關係。
+- 使用每個專案的 `rootPaths` 支援多資料夾專案；舊的 saved root 只作為 fallback 資料。
+- 預設保留作用中專案、projectless 一般聊天、automation thread、產生的工作區與目前 thread。
+- 在直接修復 JSONL 或 SQLite 前，優先使用官方 Codex App Server 的 `thread/delete`。
+- 將 `.codex/sqlite/codex-dev.db` 視為重新同步後用於驗證的衍生目錄，而不是主要刪除來源。
+- 將 `session_index.jsonl` 與 legacy 資料庫視為相容性資料，而不是權威清單。
+- 將僅改名的專案視為顯示名稱同步問題，而不是刪除目標。
+- 找出懸空的專案指派與作用中專案之外的專案型 thread。
 - 找出已刪除的 `cwd` 項目與過期的封存 thread。
 - 修改前先備份相關 metadata。
-- 清理目標 session JSONL、thread index、global state、`config.toml` 與 SQLite row。
+- 將顯示、封存、空間與最終直接修復分成不同範圍，只清理已確認的目標。
 - 驗證 SQLite 完整性，並確認目標資料已不存在。
 
 ## 安裝
@@ -36,7 +38,7 @@ Copy-Item -Recurse .\codex-local-cleanup "$env:USERPROFILE\.codex\skills\codex-l
 ## 使用範例
 
 ```text
-$codex-local-cleanup Keep my saved projects and projectless chats, then back up and clean non-active project metadata from local Codex.
+$codex-local-cleanup Keep my active local projects and projectless chats, then back up and clean non-active project metadata from local Codex.
 ```
 
 ```text
@@ -44,7 +46,7 @@ $codex-local-cleanup Find deleted cwd threads in my local Codex metadata, back t
 ```
 
 ```text
-$codex-local-cleanup Clean saved-project-outside project traces, but do not delete archived_sessions.
+$codex-local-cleanup Clean project traces outside my active local projects, but do not delete archived sessions or diagnostic logs.
 ```
 
 ## 安全注意事項
@@ -55,6 +57,8 @@ $codex-local-cleanup Clean saved-project-outside project traces, but do not dele
 
 - 這是本機應用程式狀態清理，不是原始碼清理。
 - 它可能會刪除所選目標的 Codex thread 中繼資料、session JSONL、側邊欄索引、信任設定和 SQLite row。
+- 優先使用 Desktop 的 **Remove** 與官方 App Server thread 流程，只對已驗證的殘留資料執行直接修復。
+- 顯示清理不代表刪除封存、診斷記錄、備份或執行資料庫壓縮。
 - 在全權限或不需確認的環境中，Codex 可能可以立即寫入。如果不確定，請先要求唯讀清單。
 - 不要用範圍模糊的提示直接執行大範圍清理。寫入前應檢查目標清單、備份路徑和保留規則。
 - 備份可能包含本機路徑、thread 標題、prompt 和對話內容。請勿公開分享備份。
@@ -69,7 +73,7 @@ $codex-local-cleanup Clean saved-project-outside project traces, but do not dele
 - `.sandbox-secrets/`
 - 使用者原始碼專案
 
-這個技能預設採保守策略。除非明確要求，否則會保留已儲存專案、一般聊天與目前 thread。
+這個技能預設採保守策略。除非明確要求，否則會保留目前本機專案、一般聊天與目前 thread，也不會刪除意義尚未確認的 tombstone 狀態。
 
 ## 授權
 

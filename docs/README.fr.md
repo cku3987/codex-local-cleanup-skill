@@ -6,15 +6,17 @@ Elle est utile lorsque d'anciens projets, des threads archivés, des chemins de 
 
 ## Fonctionnalités
 
-- Lit les racines de projets enregistrées depuis `.codex-global-state.json`.
-- Classe les threads de `state_*.sqlite` selon leur `cwd`.
-- Conserve par défaut les projets enregistrés, les conversations sans projet et le thread actuel.
-- Si Codex mobile affiche encore des entrées déjà absentes de la base active, elle inspecte aussi les fichiers legacy `.codex/sqlite/state_*.sqlite` et `.codex/sqlite/logs_*.sqlite`.
-- Elle traite les projets enregistrés renommés comme des problèmes de synchronisation du nom affiché, pas comme des cibles obsolètes à supprimer.
-- Repère les threads de projet inactifs situés en dehors des racines enregistrées.
+- Lit les définitions de projet actuelles dans `local-projects` et les affectations de threads dans `thread-project-assignments`.
+- Prend en charge les projets multi-dossiers via `rootPaths` ; les anciennes racines enregistrées ne servent que de repli.
+- Conserve par défaut les projets actifs, les conversations sans projet, les threads d'automation, les espaces de travail générés et le thread actuel.
+- Privilégie la méthode officielle `thread/delete` de Codex App Server avant toute réparation directe de JSONL ou SQLite.
+- Traite `.codex/sqlite/codex-dev.db` comme un catalogue dérivé à vérifier après réconciliation, et non comme la source principale de suppression.
+- Traite `session_index.jsonl` et les bases legacy comme des données de compatibilité, et non comme des inventaires faisant autorité.
+- Traite les projets renommés comme des problèmes de synchronisation du nom affiché, pas comme des cibles à supprimer.
+- Repère les affectations de projet orphelines et les threads situés hors des projets actifs.
 - Repère les entrées `cwd` supprimées et les anciens threads archivés.
 - Sauvegarde les métadonnées concernées avant toute modification.
-- Nettoie les fichiers session JSONL, les index de threads, le global state, `config.toml` et les lignes SQLite concernés.
+- Sépare le nettoyage de visibilité, des archives, de l'espace disque et la réparation directe finale, et ne traite que les cibles confirmées.
 - Vérifie l'intégrité SQLite et confirme que les cibles supprimées ne sont plus présentes.
 
 ## Installation
@@ -36,7 +38,7 @@ Redémarrez Codex Desktop si la skill n'apparaît pas immédiatement.
 ## Exemples de Prompts
 
 ```text
-$codex-local-cleanup Keep my saved projects and projectless chats, then back up and clean non-active project metadata from local Codex.
+$codex-local-cleanup Keep my active local projects and projectless chats, then back up and clean non-active project metadata from local Codex.
 ```
 
 ```text
@@ -44,7 +46,7 @@ $codex-local-cleanup Find deleted cwd threads in my local Codex metadata, back t
 ```
 
 ```text
-$codex-local-cleanup Clean saved-project-outside project traces, but do not delete archived_sessions.
+$codex-local-cleanup Clean project traces outside my active local projects, but do not delete archived sessions or diagnostic logs.
 ```
 
 ## Notes de Sécurité
@@ -55,6 +57,8 @@ Notes importantes sur les risques et les permissions :
 
 - Il s'agit d'un nettoyage d'état local de l'application, pas d'un nettoyage du code source.
 - Elle peut supprimer les métadonnées de threads Codex, les fichiers session JSONL, les index de barre latérale, les entrées de confiance et les lignes SQLite des cibles sélectionnées.
+- Elle privilégie **Remove** dans Desktop et le cycle officiel des threads App Server ; la réparation directe est réservée aux résidus vérifiés.
+- Le nettoyage de visibilité n'implique pas la suppression des archives, des logs de diagnostic, des sauvegardes ni la compaction de la base.
 - Dans les environnements avec accès complet ou sans approbation, Codex peut écrire immédiatement. En cas de doute, demandez d'abord un inventaire en lecture seule.
 - N'exécutez pas un nettoyage large à partir d'un prompt vague. Vérifiez la liste des cibles, le chemin de sauvegarde et les règles de conservation avant d'autoriser l'écriture.
 - Les sauvegardes peuvent contenir des chemins locaux, des titres de threads, des prompts et du contenu de conversations. Gardez les sauvegardes privées.
@@ -69,7 +73,7 @@ Elle ne doit pas supprimer ni réécrire :
 - `.sandbox-secrets/`
 - les projets source de l'utilisateur
 
-La skill est volontairement conservatrice. Elle préserve les racines de projets enregistrées, les conversations sans projet et le thread actuel, sauf instruction explicite contraire.
+La skill est volontairement conservatrice. Elle préserve les projets locaux actuels, les conversations sans projet et le thread actuel sauf instruction explicite, et ne supprime pas un état de type tombstone dont le rôle n'est pas confirmé.
 
 ## Licence
 
