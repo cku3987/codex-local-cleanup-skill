@@ -1,11 +1,11 @@
 ---
 name: codex-local-cleanup
-description: Safely inspect and clean stale local Codex Desktop project and thread state under $CODEX_HOME or ~/.codex when removed projects, deleted workspace paths, archived threads, or mobile-visible sidebar entries remain; use current local-project metadata and the App Server thread API first, back up before writes, preserve active projects/projectless chats/current thread by default, and reserve direct SQLite repair for verified fallback cases.
+description: Safely inspect, clean, and repair local Codex Desktop project and thread state under $CODEX_HOME or ~/.codex when removed projects, deleted workspace paths, archived threads, failed thread archive operations, or mobile-visible sidebar entries remain; use current local-project metadata and the App Server thread API first, back up before writes, preserve active projects/projectless chats/current thread by default, and reserve direct SQLite repair for verified fallback cases.
 ---
 
 # Codex Local Cleanup
 
-Clean stale local Codex Desktop project and thread state without touching user source projects.
+Clean or repair local Codex Desktop project and thread state without touching user source projects.
 
 ## Safety Rules
 
@@ -13,10 +13,12 @@ Clean stale local Codex Desktop project and thread state without touching user s
 - Require an explicit target set and create a backup before any write.
 - Never delete or rewrite `auth.json`, `installation_id`, `skills/`, `plugins/`, `automations/`, `.sandbox-secrets/`, or user source projects.
 - Never clean the current thread. If its ID cannot be identified reliably, stop before writes.
+- Never archive-repair the current thread. Require its resolved ID before applying a repair to another thread.
 - Preserve projectless/general chats unless the user explicitly includes them.
 - Preserve automation threads and automation-run state unless the user explicitly targets a removed automation and its runs.
 - Prefer the Desktop **Remove** action for a project first. Use this workflow when the project or its threads remain visible after removal and refresh/restart.
 - Prefer supported App Server lifecycle methods over direct session-file or SQLite edits.
+- For a failed archive request, retry the supported thread archive method and verify both active and archived lists before considering direct repair.
 - Do not expose secrets from historical titles, previews, prompts, paths, or backups.
 - Before deleting rollout files, resolve and verify every path is below `~/.codex/sessions` or `~/.codex/archived_sessions`.
 
@@ -26,6 +28,7 @@ Keep these scopes separate:
 
 - **Visibility cleanup**: stale project definitions, assignments, sidebar state, and selected project threads. Use this by default.
 - **Archive cleanup**: archived threads selected by the user. Do not infer consent from a visibility-cleanup request.
+- **Archive repair**: move one explicitly identified, non-current active thread into the archive after the supported archive method fails. Preserve the conversation and do not treat this as deletion.
 - **Storage cleanup**: diagnostic logs, old backups, and database compaction. Run only when the user asks to reclaim space.
 - **Repair fallback**: direct JSONL or SQLite repair after the supported API is unavailable, fails, or leaves a proven orphan.
 
@@ -40,7 +43,7 @@ Inspect local files only. Discover versions and schemas instead of assuming fixe
   - Projectless state: `projectless-thread-ids`, `thread-projectless-output-directories`, and `thread-workspace-root-hints`.
   - UI state under `electron-persisted-atom-state`, including thread descriptions, unread IDs, client IDs, browser/workspace state, and project ordering.
   - Legacy compatibility keys: `electron-saved-workspace-roots` and `electron-workspace-root-labels`.
-- Top-level `state_*.sqlite`: authoritative current thread metadata. Compare successful `_sqlx_migrations`, modification time, columns, and rollout coverage before selecting a DB.
+- Top-level `state_*.sqlite`: authoritative current thread metadata. Compare successful `_sqlx_migrations`, modification time, columns, and rollout coverage before selecting a DB. Older Windows rows may store `rollout_path` with a `\\?\` prefix that must be normalized for filesystem access.
 - `sessions/**/rollout-*.jsonl` and `archived_sessions/rollout-*.jsonl`: persisted active and archived threads.
 - `sqlite/codex-dev.db`: Desktop-derived catalog state such as `local_thread_catalog` and sync metadata. Treat it as a verification/reconciliation cache, not the primary deletion source.
 - Legacy `sqlite/state_*.sqlite` and `sqlite/logs_*.sqlite`: inspect only for migration residue or a mobile-visible orphan absent from current state.
@@ -85,6 +88,19 @@ If a Desktop project name differs from a raw folder name on mobile, compare `loc
 
 For Windows paths, normalize `\\?\` prefixes, separators, trailing separators, and case. Compare `root == cwd` or `cwd.startswith(root + "\\")`; do not rely on mixed-form `commonpath` results.
 
+## Failed Archive Repair
+
+When the user supplies a thread ID that remains active after an archive request, read [references/archive-repair.md](references/archive-repair.md) and keep this path separate from cleanup or deletion.
+
+1. Resolve the target and current thread IDs with the available app context.
+2. Retry the supported archive operation and re-list active and archived threads.
+3. If the supported operation fails and the target still has one verified active database row plus an existing rollout below `sessions`, run `scripts/repair_thread_archive.py` without `--apply`.
+4. Review its selected database, source, destination, size, hash, and path-prefix decision.
+5. Run the same command with `--apply` only for the confirmed target. The helper creates its own timestamped backup before changing state.
+6. Verify the app lists and read recent archived turns. Do not report success from SQLite state alone.
+
+Stop instead of improvising if the helper reports an ambiguous database, missing rollout, path escape, mismatched destination, current-thread target, or unsupported schema. The helper intentionally leaves global UI state, compatibility indexes, diagnostics, goals, memories, project assignments, and derived catalogs unchanged.
+
 ## Workflow
 
 1. Record the installed Desktop and CLI versions and locate `CODEX_HOME`.
@@ -122,6 +138,8 @@ For Windows paths, normalize `\\?\` prefixes, separators, trailing separators, a
 ## Verification
 
 - Run `PRAGMA integrity_check` for every modified SQLite DB.
+- For archive repair, confirm the ID is absent from the active app list, present exactly once in the archived list, and readable with its conversation intact.
+- For archive repair, confirm the active rollout is absent, the archived rollout exists with the verified hash, and the current state row has `archived = 1`, a non-null `archived_at`, and the archived path.
 - Confirm removed IDs are absent from App Server `thread/list` and `thread/read`, including archived results.
 - Confirm selected rollout files are absent and preserved rollout files still exist.
 - Confirm removed IDs are absent from the current state DB and any included legacy DB.
@@ -141,4 +159,4 @@ For Windows paths, normalize `\\?\` prefixes, separators, trailing separators, a
 
 ## Reporting
 
-Report in Korean unless the user asks otherwise. Include the cleanup mode, target and descendant counts, API versus fallback path, files/DBs touched, backup directory, size accounting, verification results, and known residuals. Keep sensitive historical content redacted.
+Report in Korean unless the user asks otherwise. Include the cleanup or repair mode, target and descendant counts, API versus fallback path, files/DBs touched, backup directory, size accounting, verification results, and known residuals. Archive repair normally reclaims no space because it moves the rollout while retaining a backup. Keep sensitive historical content redacted.
